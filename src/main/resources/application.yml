@@ -1,0 +1,62 @@
+spring:
+  profiles:
+    default: homol
+  application:
+    name: hodpe-api
+  servlet:
+    multipart:
+      max-file-size: 10MB
+  #configuração do jackson
+  jackson:
+    default-property-inclusion: NON_NULL
+
+  threads:
+    virtual:
+      enabled: true
+
+
+  # Email configuration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# Swagger
+springdoc:
+  swagger-ui:
+    filter: true
+    use-root-path: true
+  show-login-endpoint: true
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  file:
+    name: /var/log/log.log
+    path: /var/log
+  pattern:
+    console: "%d %-5level %logger : %msg%n"
+  level:
+    web: debug
+    sql: info
+    root: error
+
+# Server configuration
+server:
+  port: 8080
+  forward-headers-strategy: framework
+  compression:
+    enabled: true
+    min-response-size: 2048
+    mime-types:
+      - application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+
+cors:
+  allowedOriginPatterns: ${ALLOWED_ORIGINS_PATTERN}

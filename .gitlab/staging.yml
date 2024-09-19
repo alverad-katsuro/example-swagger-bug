@@ -1,0 +1,54 @@
+sonarqube-check:
+  stage: sonarqube-check
+  tags:
+    - docker
+  image: maven:3-eclipse-temurin-21
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - mvn verify sonar:sonar -Dsonar.projectKey=${SONAR_PROJECT_KEY}
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - master
+    - homol
+
+sonarqube-vulnerability-report:
+  stage: sonarqube-vulnerability-report
+  tags:
+    - docker
+  image: curlimages/curl
+  script:
+    - 'curl -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=${SONAR_PROJECT_KEY}=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" -o gl-sast-sonar-report.json'
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - master
+    - homol
+  artifacts:
+    expire_in: 1 day
+    reports:
+      sast: gl-sast-sonar-report.json
+  dependencies:
+    - sonarqube-check
+
+build_staging:
+  extends:
+    - .create_env
+  stage: staging
+  environment: homol
+  except:
+    - homol
+    - master
+    - main
+  variables:
+    DOCKER_IMAGE_TAG: staging
+  script:
+    - docker compose -f docker-compose.build.yml build --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG app

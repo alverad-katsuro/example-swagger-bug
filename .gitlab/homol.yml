@@ -1,0 +1,35 @@
+build_homol:
+  extends:
+    - .create_env
+  environment: homol
+  stage: build
+  only:
+    - homol
+  script:
+    - docker compose -f docker-compose.build.yml build --build-arg CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE --build-arg DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG
+
+send_image_registry_homol:
+  environment: homol
+  stage: send_registry
+  only:
+    - homol
+  tags:
+    - ssh
+    - solar-srv1
+  script:
+    - docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD $CI_REGISTRY
+
+    - docker compose -f docker-compose.build.yml push
+
+
+deploy_homol:
+  extends:
+    - .create_env
+  environment: homol
+  stage: deploy
+  only:
+    - homol
+  script:
+    - docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD $CI_REGISTRY
+
+    - docker stack deploy --with-registry-auth  -c <(docker compose -f docker-compose.deploy.hm.yml config | tail -n +2) ${CI_PROJECT_NAMESPACE}_hm
